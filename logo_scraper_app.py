@@ -71,8 +71,10 @@ def save_logo(url, site):
             header, encoded = url.split(",",1)
             data = base64.b64decode(encoded)
 
-            if imghdr.what(None,data) is None:
-                return None
+            try:
+    Image.open(io.BytesIO(data))
+except:
+    return None
 
             path = os.path.join(OUTPUT_FOLDER, filename + ".png")
 
