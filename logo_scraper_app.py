@@ -152,7 +152,13 @@ def detect_logo(site):
 
             for img in imgs:
 
-                src = img.get("src") or img.get("data-src")
+               src = (
+    img.get("src")
+    or img.get("data-src")
+    or img.get("data-lazy-src")
+    or img.get("data-original")
+    or img.get("data-srcset")
+)
 
                 if valid_logo(src):
                     return urljoin(site,src)
@@ -168,7 +174,13 @@ def detect_logo(site):
 
             if "logo" in alt or "logo" in title:
 
-                src = img.get("src") or img.get("data-src")
+                src = (
+    img.get("src")
+    or img.get("data-src")
+    or img.get("data-lazy-src")
+    or img.get("data-original")
+    or img.get("data-srcset")
+)
 
                 if valid_logo(src):
                     return urljoin(site,src)
