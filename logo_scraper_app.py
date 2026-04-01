@@ -15,6 +15,7 @@ from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.options import Options
 
+
 # ==========================
 # CONFIG
 # ==========================
@@ -72,9 +73,9 @@ def save_logo(url, site):
             data = base64.b64decode(encoded)
 
             try:
-    Image.open(io.BytesIO(data))
-except:
-    return None
+                Image.open(io.BytesIO(data))
+            except:
+                return None
 
             path = os.path.join(OUTPUT_FOLDER, filename + ".png")
 
@@ -133,7 +134,6 @@ def detect_logo(site):
 
         soup = BeautifulSoup(r.text,"html.parser")
 
-        # HEADER
         header = soup.find("header")
 
         if header:
@@ -148,7 +148,6 @@ def detect_logo(site):
                     return urljoin(site,src)
 
 
-        # CLASS LOGO
         imgs = soup.find_all("img",class_=lambda x:x and "logo" in x.lower())
 
         for img in imgs:
@@ -159,7 +158,6 @@ def detect_logo(site):
                 return urljoin(site,src)
 
 
-        # ID LOGO
         imgs = soup.find_all("img",id=lambda x:x and "logo" in x.lower())
 
         for img in imgs:
@@ -170,14 +168,6 @@ def detect_logo(site):
                 return urljoin(site,src)
 
 
-        # INLINE SVG
-        svg = soup.find("svg")
-
-        if svg:
-            return None   # handled by selenium
-
-
-        # BASE64
         imgs = soup.find_all("img")
 
         for img in imgs:
@@ -188,7 +178,6 @@ def detect_logo(site):
                 return src
 
 
-        # CSS BACKGROUND
         divs = soup.find_all(style=True)
 
         for div in divs:
@@ -206,14 +195,12 @@ def detect_logo(site):
                     return urljoin(site,bg)
 
 
-        # OG META IMAGE
         meta = soup.find("meta",property="og:image")
 
         if meta:
             return urljoin(site,meta["content"])
 
 
-        # FAVICON
         icon = soup.find("link",rel=lambda x:x and "icon" in x.lower())
 
         if icon:
@@ -247,7 +234,6 @@ def selenium_logo(site):
 
         time.sleep(6)
 
-        # HEADER SEARCH
         headers = driver.find_elements(By.TAG_NAME,"header")
 
         for header in headers:
@@ -263,7 +249,7 @@ def selenium_logo(site):
                     driver.quit()
                     return src
 
-            # SVG
+
             svgs = header.find_elements(By.TAG_NAME,"svg")
 
             if svgs:
@@ -281,7 +267,6 @@ def selenium_logo(site):
                 return path
 
 
-        # FALLBACK IMG SEARCH
         imgs = driver.find_elements(By.TAG_NAME,"img")
 
         for img in imgs:
