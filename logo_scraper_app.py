@@ -16,9 +16,9 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.options import Options
 
 
-# ==========================
+# ======================
 # CONFIG
-# ==========================
+# ======================
 
 OUTPUT_FOLDER = "logos"
 os.makedirs(OUTPUT_FOLDER, exist_ok=True)
@@ -36,9 +36,9 @@ IGNORE_KEYWORDS = [
 ]
 
 
-# ==========================
-# VALIDATE IMAGE
-# ==========================
+# ======================
+# VALIDATE LOGO
+# ======================
 
 def valid_logo(src):
 
@@ -56,9 +56,9 @@ def valid_logo(src):
     return True
 
 
-# ==========================
-# SAVE IMAGE / SVG
-# ==========================
+# ======================
+# SAVE LOGO
+# ======================
 
 def save_logo(url, site):
 
@@ -85,22 +85,6 @@ def save_logo(url, site):
             return path
 
 
-        # SVG URL
-        if url.endswith(".svg"):
-
-            r = requests.get(url,headers=HEADERS,timeout=10)
-
-            if r.status_code == 200:
-
-                path = os.path.join(OUTPUT_FOLDER, filename + ".svg")
-
-                with open(path,"wb") as f:
-                    f.write(r.content)
-
-                return path
-
-
-        # NORMAL IMAGE
         r = requests.get(url,headers=HEADERS,timeout=10)
 
         if r.status_code != 200:
@@ -111,7 +95,12 @@ def save_logo(url, site):
         if "image" not in content_type:
             return None
 
-        path = os.path.join(OUTPUT_FOLDER, filename + ".png")
+        ext = ".png"
+
+        if "svg" in content_type:
+            ext = ".svg"
+
+        path = os.path.join(OUTPUT_FOLDER, filename + ext)
 
         with open(path,"wb") as f:
             f.write(r.content)
@@ -122,9 +111,9 @@ def save_logo(url, site):
         return None
 
 
-# ==========================
+# ======================
 # FAST HTML SCRAPER
-# ==========================
+# ======================
 
 def detect_logo(site):
 
@@ -134,6 +123,7 @@ def detect_logo(site):
 
         soup = BeautifulSoup(r.text,"html.parser")
 
+        # HEADER
         header = soup.find("header")
 
         if header:
@@ -142,32 +132,71 @@ def detect_logo(site):
 
             for img in imgs:
 
-                src = img.get("src") or img.get("data-src") or img.get("data-lazy")
+                src = (
+                    img.get("src")
+                    or img.get("data-src")
+                    or img.get("data-lazy")
+                    or img.get("srcset")
+                )
 
                 if valid_logo(src):
                     return urljoin(site,src)
 
 
+        # NAVBAR
+        nav = soup.find("nav")
+
+        if nav:
+
+            imgs = nav.find_all("img")
+
+            for img in imgs:
+
+                src = img.get("src") or img.get("data-src")
+
+                if valid_logo(src):
+                    return urljoin(site,src)
+
+
+        # ALT OR TITLE
+        imgs = soup.find_all("img")
+
+        for img in imgs:
+
+            alt = str(img.get("alt","")).lower()
+            title = str(img.get("title","")).lower()
+
+            if "logo" in alt or "logo" in title:
+
+                src = img.get("src") or img.get("data-src")
+
+                if valid_logo(src):
+                    return urljoin(site,src)
+
+
+        # CLASS LOGO
         imgs = soup.find_all("img",class_=lambda x:x and "logo" in x.lower())
 
         for img in imgs:
 
-            src = img.get("src") or img.get("data-src")
+            src = img.get("src")
 
             if valid_logo(src):
                 return urljoin(site,src)
 
 
+        # ID LOGO
         imgs = soup.find_all("img",id=lambda x:x and "logo" in x.lower())
 
         for img in imgs:
 
-            src = img.get("src") or img.get("data-src")
+            src = img.get("src")
 
             if valid_logo(src):
                 return urljoin(site,src)
 
 
+        # BASE64
         imgs = soup.find_all("img")
 
         for img in imgs:
@@ -178,6 +207,7 @@ def detect_logo(site):
                 return src
 
 
+        # CSS BACKGROUND
         divs = soup.find_all(style=True)
 
         for div in divs:
@@ -195,17 +225,18 @@ def detect_logo(site):
                     return urljoin(site,bg)
 
 
+        # OG META
         meta = soup.find("meta",property="og:image")
 
         if meta:
             return urljoin(site,meta["content"])
 
 
+        # FAVICON
         icon = soup.find("link",rel=lambda x:x and "icon" in x.lower())
 
         if icon:
             return urljoin(site,icon["href"])
-
 
     except:
         pass
@@ -213,9 +244,9 @@ def detect_logo(site):
     return None
 
 
-# ==========================
+# ======================
 # SELENIUM FALLBACK
-# ==========================
+# ======================
 
 def selenium_logo(site):
 
@@ -224,7 +255,6 @@ def selenium_logo(site):
         options = Options()
 
         options.add_argument("--headless=new")
-        options.add_argument("--disable-gpu")
         options.add_argument("--no-sandbox")
         options.add_argument("--disable-dev-shm-usage")
 
@@ -232,8 +262,9 @@ def selenium_logo(site):
 
         driver.get(site)
 
-        time.sleep(6)
+        time.sleep(4)
 
+        # HEADER
         headers = driver.find_elements(By.TAG_NAME,"header")
 
         for header in headers:
@@ -244,11 +275,10 @@ def selenium_logo(site):
 
                 src = img.get_attribute("src")
 
-                if src and valid_logo(src):
+                if valid_logo(src):
 
                     driver.quit()
                     return src
-
 
             svgs = header.find_elements(By.TAG_NAME,"svg")
 
@@ -266,18 +296,6 @@ def selenium_logo(site):
 
                 return path
 
-
-        imgs = driver.find_elements(By.TAG_NAME,"img")
-
-        for img in imgs:
-
-            src = img.get_attribute("src")
-
-            if src and valid_logo(src):
-
-                driver.quit()
-                return src
-
         driver.quit()
 
     except:
@@ -286,9 +304,9 @@ def selenium_logo(site):
     return None
 
 
-# ==========================
+# ======================
 # PROCESS SITE
-# ==========================
+# ======================
 
 def process_site(site):
 
@@ -310,9 +328,9 @@ def process_site(site):
     return site,None
 
 
-# ==========================
-# ZIP DOWNLOAD
-# ==========================
+# ======================
+# ZIP FILE
+# ======================
 
 def create_zip():
 
@@ -327,14 +345,14 @@ def create_zip():
     return zip_path
 
 
-# ==========================
+# ======================
 # STREAMLIT UI
-# ==========================
+# ======================
 
 st.title("Universal Website Logo Scraper")
 
 urls = st.text_area(
-"Paste Websites (one per line)",
+"Paste websites (one per line)",
 height=200
 )
 
@@ -344,7 +362,7 @@ if st.button("Scrape Logos"):
 
     results = []
 
-    with ThreadPoolExecutor(max_workers=10) as executor:
+    with ThreadPoolExecutor(max_workers=15) as executor:
 
         for r in executor.map(process_site,sites):
             results.append(r)
