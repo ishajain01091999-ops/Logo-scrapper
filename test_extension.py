@@ -31,11 +31,6 @@ options.add_argument("--window-size=1920,1080")
 
 driver = webdriver.Chrome(options=options)
 
-driver = webdriver.Chrome(
-    service=Service(ChromeDriverManager().install()),
-    options=options
-)
-
 # =========================================================
 # HELPER FUNCTIONS
 # =========================================================
