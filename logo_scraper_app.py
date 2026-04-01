@@ -2,7 +2,8 @@ import streamlit as st
 import requests
 import os
 import base64
-import imghdr
+from PIL import Image
+import io
 import zipfile
 import time
 
